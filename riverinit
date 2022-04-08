@@ -1,0 +1,116 @@
+#!/bin/sh
+
+# This is the example configuration file for river.
+#
+# If you wish to edit this, you will probably want to copy it to
+# $XDG_CONFIG_HOME/river/init or $HOME/.config/river/init first.
+#
+# See the river(1), riverctl(1), and rivertile(1) man pages for complete
+# documentation.
+
+# Use the "logo" key as the primary modifier
+mod="Alt" #alt
+
+# Mod+Shift+Return to start an instance of alacritty
+riverctl map normal $mod+Shift Return spawn alacritty
+
+# Mod+Shift+S to take a screenshot
+riverctl map normal $mod+Shift S spawn 'grim -g "$(slurp -o)" - | wl-copy'
+riverctl map normal $mod+Shift P spawn "grim -g \"\$(slurp -b '#00000000' -p)\" -t ppm - | convert - -format '%[pixel:p{0,0}]' txt:- | awk 'BEGIN{ORS=\"\"} END{print \$3}' | wl-copy"
+
+# Mod+Q to close the focused view
+riverctl map normal $mod+Shift C close
+
+# Mod+Shift+E to exit river
+riverctl map normal $mod+Shift Delete exit
+
+riverctl map normal $mod Tab focus-previous-tags
+
+# Mod+Shift+{Period,Comma} to send the focused view to the next/previous output
+riverctl map normal $mod+Shift Period send-to-output next
+riverctl map normal $mod+Shift Comma send-to-output previous
+
+# Mod+X to rotate outputs
+riverctl map normal $mod x rotate-outputs
+
+# Mod+Return to bump the focused view to the top of the layout stack
+riverctl map normal $mod Return zoom
+
+# Mod + Left Mouse Button to move views
+riverctl map-pointer normal $mod BTN_LEFT move-view
+
+# Mod + Right Mouse Button to resize views
+riverctl map-pointer normal $mod BTN_RIGHT resize-view
+
+for i in $(seq 1 9)
+do
+    tags=$((1 << ($i - 1)))
+
+    # Mod+[1-9] to focus tag [0-8]
+    riverctl map normal $mod $i set-focused-tags $tags
+
+    # Mod+Shift+[1-9] to tag focused view with tag [0-8]
+    riverctl map normal $mod+Shift $i set-view-tags $tags
+done
+
+# Mod+Space to toggle float
+riverctl map normal $mod Space toggle-float
+
+# Mod+F to toggle fullscreen
+riverctl map normal $mod F toggle-fullscreen
+
+# Various media key mapping examples for both normal and locked mode which do
+# not have a modifier
+for mode in normal locked
+do
+    # Eject the optical drive (well if you still have one that is)
+    riverctl map $mode None XF86Eject spawn 'eject -T'
+
+    # Control pulse audio volume with pamixer (https://github.com/cdemoulins/pamixer)
+    riverctl map $mode None XF86AudioRaiseVolume  spawn 'pamixer -i 5'
+    riverctl map $mode None XF86AudioLowerVolume  spawn 'pamixer -d 5'
+    riverctl map $mode None XF86AudioMute         spawn 'pamixer --toggle-mute'
+
+    # Control MPRIS aware media players with playerctl (https://github.com/altdesktop/playerctl)
+    riverctl map $mode None XF86AudioMedia spawn 'playerctl play-pause'
+    riverctl map $mode None XF86AudioPlay  spawn 'playerctl play-pause'
+    riverctl map $mode None XF86AudioPrev  spawn 'playerctl previous'
+    riverctl map $mode None XF86AudioNext  spawn 'playerctl next'
+
+    # Control screen backlight brighness with light (https://github.com/haikarainen/light)
+    riverctl map $mode None XF86MonBrightnessUp   spawn 'light -A 5'
+    riverctl map $mode None XF86MonBrightnessDown spawn 'light -U 5'
+done
+
+# Set background and border color
+riverctl background-color 0x002b36
+riverctl border-color-focused 0x005475
+riverctl border-color-unfocused 0x545466
+riverctl border-width 1
+riverctl focus-follows-cursor normal
+riverctl attach-mode bottom
+#riverctl smart-borders 0
+
+#riverctl override-spawn-add "WL-1" 1 "/usr/bin/firefox"
+#riverctl override-spawn-add "WL-1" 2 "/usr/bin/obs"
+
+# Set keyboard repeat rate
+riverctl set-repeat 100 500
+
+# Make certain views start floating
+riverctl float-filter-add app-id float
+riverctl float-filter-add title "popup title with spaces"
+
+# Set app-ids and titles of views which should use client side decorations
+riverctl csd-filter-add app-id "gedit"
+
+# Configure displays
+riverctl spawn kanshi
+riverctl spawn ~/WindowManager/bar.sh
+riverctl spawn "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=river"
+riverctl spawn "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=river"
+
+# Set and exec into the default layout generator, rivertile.
+# River will send the process group of the init executable SIGTERM on exit.
+riverctl default-layout rivertile
+exec rivertile -view-padding 0 -outer-padding 0 -main-ratio 0.55
