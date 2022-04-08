@@ -11,6 +11,7 @@ setopt interactive_comments
 
 if command -v go &> /dev/null
 then
+    export GOPROXY=$(go env GOPROXY)
     export GOPATH=$(go env GOPATH)
 
     # Add $GOPATH/bin to $PATH if not already there
