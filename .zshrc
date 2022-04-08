@@ -9,7 +9,16 @@ PS1="%B%{$fg[cyan]%}[%{$fg[red]%}%n%{$fg[cyan]%}@%{$fg[blue]%}%M %{$fg[magenta]%
 stty stop undef
 setopt interactive_comments
 
-export PATH=$PATH:/home/james/go/bin
+if command -v go &> /dev/null
+then
+    export GOPATH=$(go env GOPATH)
+
+    # Add $GOPATH/bin to $PATH if not already there
+    case ":$PATH:" in
+        *:$GOPATH/bin:*) ;;
+        *) export PATH=$PATH:$GOPATH/bin ;;
+    esac
+fi
 
 alias ls="ls --color=auto"
 
